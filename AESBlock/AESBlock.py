@@ -82,7 +82,7 @@ class AESBlock:
                 self.rows[i][j] = s_box.index(self.rows[i][j])
 
     def shiftRows(self):
-        result = DataMatrix(
+        result = AESBlock(
             self.rows_number, self.columns_number, b"                ")
         for i in range(self.rows_number):
             for j in range(self.columns_number):
