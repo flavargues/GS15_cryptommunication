@@ -19,6 +19,41 @@ cipher_specs = {
     },
 }
 
+"""
+ancdata = [(cmsg_level, cmsg_type, cmsg_data)]
+
+msg (using AES key)
+    1 [0/1/2] in_data
+
+    clear = -1
+    AES-128 = 0
+    AES-192 = 1
+    AES-256 = 2
+
+SYM (using DH key)
+    0 [-2/3/4/5] "data"
+
+    AES begin 0 ""
+    AES new_key 1 ""
+    AES send_key 2 "key"
+    AES rotted -1 ""
+
+ASYM
+    -1 [-1/0/1/2] "data"
+
+    DH begin 0 ""
+    DH negotiate 1 "?"
+    DH send_pub_key 2 "int"
+    DH rotted -1 ""
+
+CONNECTION
+    -2 [0/1]
+
+    secure 1 ""
+    hello 0 ""
+    goodbye -1 ""
+"""
+
 Rcon = ( 0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a )
 Sbox = (
     0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
