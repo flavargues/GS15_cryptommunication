@@ -1,7 +1,7 @@
 import logging
 import socket
 import sys
-from ..misc.constants import HOST, INITIAL_PORT, BUFSIZE
+from utils.constants import HOST, INITIAL_PORT, BUFSIZE
 
 logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
 logger = logging.getLogger(__name__)
@@ -26,4 +26,3 @@ class Client():
         ret = self.socket.recvmsg(BUFSIZE)
         print(ret)
         return(ret)
-        

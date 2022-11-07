@@ -4,7 +4,7 @@ import logging
 import threading
 import sys
 import time
-from ..misc.constants import HOST, INITIAL_PORT, BUFSIZE
+from utils.constants import HOST, INITIAL_PORT, BUFSIZE
 
 
 logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
