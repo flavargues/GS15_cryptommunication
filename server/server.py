@@ -2,12 +2,15 @@ import socket
 import uuid
 import logging
 import threading
+import sys
+import time
 
 HOST = "127.0.0.1"
-INITIAL_PORT = 63256
+INITIAL_PORT = 63258
 
 BUFSIZE = 2048
 
+logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
 logger = logging.getLogger(__name__)
 
 class Server():
@@ -19,38 +22,46 @@ class Server():
         self.entrypoint_socket = entrypoint_socket
         logger.info(f"Listening on {HOST}:{INITIAL_PORT}.")
 
-    def uuid_generator(self):
-        generator = uuid
-        while True:
-            yield generator.uuid4()
-
     def run(self):
-        while True:
-            (conn, addr) = self.entrypoint_socket.accept()
-            logger.debug(f"Connection from {addr}.")
-            new_client = ClientThread(self.uuid_generator(), conn, self.clients)
-            new_client.start()
-            self.clients.add(new_client)
+        try:
+            while True:
+                (conn, addr) = self.entrypoint_socket.accept()
+                logger.debug(f"Connection from {addr}.")
+                new_client = ClientThread(uuid.uuid1(), conn, self.clients)
+                new_client.start()
+                self.clients.add(new_client)
+        except KeyboardInterrupt:
+            logger.info("Stopping Server.")
+        finally:
+            self.entrypoint_socket.close()
 
 class ClientThread(threading.Thread):
     def __init__(self, uuid, connection, friends) -> None:
+        super().__init__()
         self.uuid = uuid
         self.conn: socket.socket = connection
         self.friends = friends
         logger.info(f"[+] New client thread {self.uuid}.")
 
-    def send(self, data_tuple):
-        self.conn.sendmsg(*data_tuple)
-        logger.info(f"Sent msg={data_tuple}.")
+    def send(self, data):
+        self.conn.sendmsg(data)
+        logger.info(f"Sent msg={data}.")
 
     def run(self):
         go = True
         while go:
-            (data, ancdata, msg_flags, address) = self.conn.recvmsg(BUFSIZE)
-            logger.info(f"Received msg data={data}, ancdata={ancdata}, msg_flags={msg_flags}, address={address}.")
-            self.friends.send((data, ancdata, msg_flags, address))
+            data = self.conn.recvmsg(BUFSIZE)
+            print(data)
+            if not data:
+                time.sleep(1)
+                continue
+            logger.info(f"Received msg data={data}.")
+            for friend in self.friends - {self}:
+                friend.send(data)
             
-            if (-2, -1, "") in ancdata:
-                go = False
+            # if (-2, -1, "") in dataancdata:
+            #     go = False
 
         logger.info(f"[-] Del client thread {self.uuid}.")
+
+s = Server().run()
