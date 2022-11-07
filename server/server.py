@@ -4,11 +4,8 @@ import logging
 import threading
 import sys
 import time
+from ..misc.constants import HOST, INITIAL_PORT, BUFSIZE
 
-HOST = "127.0.0.1"
-INITIAL_PORT = 63258
-
-BUFSIZE = 2048
 
 logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
 logger = logging.getLogger(__name__)
@@ -18,34 +15,35 @@ class Server():
         self.clients = set()
         entrypoint_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         entrypoint_socket.bind((HOST, INITIAL_PORT))
-        entrypoint_socket.listen()
         self.entrypoint_socket = entrypoint_socket
-        logger.info(f"Listening on {HOST}:{INITIAL_PORT}.")
 
     def run(self):
+        self.entrypoint_socket.listen()
+        logger.info(f"Listening on {HOST}:{INITIAL_PORT}.")
         try:
             while True:
                 (conn, addr) = self.entrypoint_socket.accept()
                 logger.debug(f"Connection from {addr}.")
                 new_client = ClientThread(uuid.uuid1(), conn, self.clients)
                 new_client.start()
-                self.clients.add(new_client)
         except KeyboardInterrupt:
             logger.info("Stopping Server.")
         finally:
+            self.entrypoint_socket.shutdown(socket.SHUT_RDWR)
             self.entrypoint_socket.close()
 
 class ClientThread(threading.Thread):
-    def __init__(self, uuid, connection, friends) -> None:
+    def __init__(self, uuid, conn: socket.socket, friends: set) -> None:
         super().__init__()
         self.uuid = uuid
-        self.conn: socket.socket = connection
+        self.conn = conn
         self.friends = friends
+        self.friends.add(self)
         logger.info(f"[+] New client thread {self.uuid}.")
 
-    def send(self, data):
-        self.conn.sendmsg(data)
-        logger.info(f"Sent msg={data}.")
+    def sendmsg(self, data, ancillary_data=[], flags=0):
+        self.conn.sendmsg([data], ancillary_data, flags)
+        logger.info(f"Sent msg={data}, anc={ancillary_data}; flags={flags}.")
 
     def run(self):
         go = True
@@ -57,7 +55,7 @@ class ClientThread(threading.Thread):
                 continue
             logger.info(f"Received msg data={data}.")
             for friend in self.friends - {self}:
-                friend.send(data)
+                friend.sendmsg(data)
             
             # if (-2, -1, "") in dataancdata:
             #     go = False

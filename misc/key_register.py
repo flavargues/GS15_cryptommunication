@@ -1,4 +1,7 @@
-class Key:
+from abc import ABC
+from singleton import SingletonMeta
+
+class Key(ABC):
     pass
 
 
@@ -15,44 +18,53 @@ class SymetricKey(Key):
             return False
 
     def __hash__(self) -> int:
-        return self.key
+        return hash(self.key)
+
+    def __repr__(self) -> str:
+        return "SYM=" + str(self.key)
 
 class AsymetricKey(Key):
-    def __init__(self, pub_key, priv_key) -> None:
+    def __init__(self, pub_key, priv_key=None) -> None:
         if not pub_key:
             raise ValueError('"pub_key" can\'t be None.')
         self.pub_key = pub_key
-        if pub_key and len(pub_key) != len(priv_key):
+        if priv_key and len(pub_key) != len(priv_key):
                 raise ValueError("Different length between public and private key.")
         self.priv_key = priv_key
 
+    def __eq__(self, __o: object) -> bool:
+        if isinstance(__o, AsymetricKey):
+            return self.priv_key == __o.priv_key and self.pub_key == __o.pub_key
+        else:
+            return False
 
+    def __hash__(self) -> int:
+        return hash(self.pub_key)
 
-    def pub_key(self):
-        return self.pub_key
-
-    def priv_key(self):
-        return self.priv_key
-
-
-class KeyRegister:
+    def __repr__(self) -> str:
+        if self.priv_key:
+            return "ASYM=" + str(self.pub_key) + "+" + str(self.priv_key)
+        else:
+            return "ASYM=" + str(self.pub_key)
+            
+class KeyRegister(metaclass=SingletonMeta):
     def __init__(self):
-        pass
+        self.register = set()
 
-    def add(self):
-        pass
+    def add(self, key):
+        if isinstance(key, Key):
+            return self.register.add(key)
+        else:
+            raise TypeError("Only Key subclasses")
 
-    def copy(self):
-        pass
+    def discard(self, key):
+        return self.register.discard(key)
 
-    def discard(self):
-        pass
+    def remove(self, key):
+        self.register.remove(key)
 
-    def remove(self):
-        pass
+    def union(self, key):
+        self.register.union(key)
 
-    def union(self):
-        pass
-
-    def update(self):
-        pass
+    def update(self, key):
+        self.register.update(key)

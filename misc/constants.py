@@ -1,3 +1,11 @@
+# Disable black formatting
+# fmt: off
+
+HOST = "127.0.0.1"
+INITIAL_PORT = 63258
+
+BUFSIZE = 2048
+
 cipher_specs = {
     "AES-128": {
         "key_length": 128,
