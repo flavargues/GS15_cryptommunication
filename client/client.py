@@ -1,7 +1,11 @@
 import logging
 import socket
 import sys
-from utils.constants import HOST, INITIAL_PORT, BUFSIZE
+
+HOST = "127.0.0.1"
+INITIAL_PORT = 63258
+
+BUFSIZE = 2048
 
 logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
 logger = logging.getLogger(__name__)
@@ -9,10 +13,10 @@ logger = logging.getLogger(__name__)
 class Client():
     def __init__(self, host="", port=0) -> None:
         if not host:
-            self.host = HOST
+            self.host = host or HOST
         if not port:
-            self.port = INITIAL_PORT
-        logger.info(f"Client ready for host={host}, port={port}.")
+            self.port = port or INITIAL_PORT
+        logger.info(f"Client ready for host={self.host}, port={self.port}.")
         
     def connect(self):
         logger.debug(f"Initiating connection to {self.host}:{self.port}.")
@@ -26,3 +30,8 @@ class Client():
         ret = self.socket.recvmsg(BUFSIZE)
         print(ret)
         return(ret)
+
+    def __del__(self):
+        self.socket.shutdown(socket.SHUT_RDWR)
+        self.socket.close()
+        
