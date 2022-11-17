@@ -1,7 +1,6 @@
 import socket
 import uuid
 import logging
-import threading
 import sys
 import time
 
