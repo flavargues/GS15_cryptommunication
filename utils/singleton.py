@@ -1,4 +1,4 @@
-#https://refactoring.guru/fr/design-patterns/singleton/python/example#example-1--main-py
+# https://refactoring.guru/fr/design-patterns/singleton/python/example#example-1--main-py
 
 from threading import Lock
 
