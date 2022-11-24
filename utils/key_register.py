@@ -1,6 +1,7 @@
 from abc import ABC
 from singleton import SingletonMeta
 
+
 class Key(ABC):
     pass
 
@@ -23,13 +24,14 @@ class SymetricKey(Key):
     def __repr__(self) -> str:
         return "SYM=" + str(self.key)
 
+
 class AsymetricKey(Key):
     def __init__(self, pub_key, priv_key=None) -> None:
         if not pub_key:
             raise ValueError('"pub_key" can\'t be None.')
         self.pub_key = pub_key
         if priv_key and len(pub_key) != len(priv_key):
-                raise ValueError("Different length between public and private key.")
+            raise ValueError("Different length between public and private key.")
         self.priv_key = priv_key
 
     def __eq__(self, __o: object) -> bool:
@@ -46,7 +48,8 @@ class AsymetricKey(Key):
             return "ASYM=" + str(self.pub_key) + "+" + str(self.priv_key)
         else:
             return "ASYM=" + str(self.pub_key)
-            
+
+
 class KeyRegister(metaclass=SingletonMeta):
     def __init__(self):
         self.register = set()

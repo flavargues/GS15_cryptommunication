@@ -1,7 +1,6 @@
 import socket
 import uuid
 import logging
-import threading
 import sys
 import time
 
@@ -17,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class Server:
     def __init__(self, host=DEFAULT_HOST, port=DEFAULT_PORT) -> None:
-        self.clients:set = set()
+        self.clients: set = set()
 
         self.entrypoint_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.entrypoint_socket.bind((host, port))
@@ -28,15 +27,15 @@ class Server:
         logger.info(f"Listening...")
         try:
             while True:
-                #Entry
+                # Entry
                 (conn, addr) = self.entrypoint_socket.accept()
                 conn.setblocking(0)
                 logger.debug(f"Connection from {addr}.")
                 self.clients.add(ClientConnection(uuid.uuid1(), conn, self.clients))
                 # TODO hostile challenge, identification & authorization
 
-                #Communicate
-                
+                # Communicate
+
                 self.wake_clients()
                 time.sleep(1)
         except KeyboardInterrupt:
