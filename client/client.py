@@ -10,14 +10,17 @@ BUFSIZE = 2048
 logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
 logger = logging.getLogger(__name__)
 
+
 class Client():
     def __init__(self, host="", port=0) -> None:
         if not host:
             self.host = host or HOST
         if not port:
             self.port = port or INITIAL_PORT
-        logger.info(f"Client ready for host={self.host}, port={self.port}.")
+        self.gen_identity_keys()
         
+        logger.info(f"Client ready for host={self.host}, port={self.port}.")
+
     def connect(self):
         logger.debug(f"Initiating connection to {self.host}:{self.port}.")
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -29,9 +32,11 @@ class Client():
     def recvmsg(self):
         ret = self.socket.recvmsg(BUFSIZE)
         print(ret)
-        return(ret)
+        return (ret)
 
     def __del__(self):
         self.socket.shutdown(socket.SHUT_RDWR)
         self.socket.close()
-        
+
+    def gen_identity_keys(self):
+        self.

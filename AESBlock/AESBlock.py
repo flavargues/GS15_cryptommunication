@@ -48,8 +48,8 @@ class AESBlock:
         for i in range(self.rows_number):
             output += "|"
             for j in range(self.columns_number):
-                output += f" {self.rows[i][j]}"
-            output += " |\n"
+                output += f"\t{self.rows[i][j]}"
+            output += " \t|\n"
         return output
 
     # def __getitem__():
@@ -67,7 +67,6 @@ class AESBlock:
             for resRow in range(self.rows_number):
                 for resCol in range(self.columns_number):
                     self.rows[resRow][resCol] ^= roundKey.rows[resRow][resCol]
-
         else:
             raise Exception("Matrices uncompatible for multiplication")
 
@@ -97,26 +96,12 @@ class AESBlock:
             for constCol in range(1, self.rows_number):
                 totalValue ^= applyIrrPolTheo(
                     constantMatrix.rows[constRow][constCol] * self.rows[constCol][colId])
-            print(totalValue)
-            self.rows[constRow][colId] = totalValue
+            self.rows[constRow][colId] = totalValue % 0xFF
 
     def mixColumns(self, constantMatrix):
         if (self.columns_number == constantMatrix.rows_number):
             for dataCol in range(self.columns_number):
-                print("calc col1")
                 self.mixSingleColumn(dataCol, constantMatrix)
-            # for dataRow in range(self.rows_number):
-            #     for dataCol in range(self.columns_number):
-            #         totalValue = applyIrrPolTheo(constantMatrix.rows[dataRow][0] * self.rows[0][dataCol])
-            #         for k in range(1,self.rows_number):
-            #             coupleValue = applyIrrPolTheo(constantMatrix.rows[dataRow][k] * self.rows[k][dataCol])
-
-            #             totalValue = applyIrrPolTheo(totalValue^coupleValue)
-            #         print(totalValue)
-            #         self.rows[dataRow][dataCol] = totalValue
-
-            # return result
-    # apply = lambda a: (((a << 1) ^ 0x1B) & 0xFF) if (a & 0x80) else (a << 1)
 
 
 def main():
@@ -132,22 +117,11 @@ def main():
     print(dataMatrix)
     dataMatrix.subBytes()
     print(dataMatrix)
-    dataMatrix.invSubBytes()
-    print(dataMatrix)
     dataMatrix.shiftRows()
     print(dataMatrix)
     print(constantMatrix)
     dataMatrix.mixColumns(constantMatrix)
     print(dataMatrix)
-    # dataMatrix.addRoundKey(keyMatrix)
-    # print(dataMatrix)
-    # dataMatrix.mixColumns(dataMatrix)
-
-    # res: DataMatrix = m1.addRoundKey(m2)
-    # print(res)
-    # res.subBytes()
-    # res.shiftRows()
-    # res.mixColumns()
 
 
 if __name__ == '__main__':
