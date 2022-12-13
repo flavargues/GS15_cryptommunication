@@ -1,10 +1,6 @@
-# authent signature hachage
-
-
-class CryptographicConstantBaseClass():
+class CryptographicConstantBaseClass:
     def __eq__(self, __o: object) -> bool:
         return type(__o) == type(self) and hash(self) == hash(__o)
-
 
 
 class SymetricKey(CryptographicConstantBaseClass):
@@ -44,6 +40,7 @@ class AsymetricKey(CryptographicConstantBaseClass):
         else:
             return "ASYM=" + str(self.pub_key)
 
+
 class Hash(CryptographicConstantBaseClass):
     def __init__(self, hash) -> None:
         if len(hash) != 256:
@@ -55,6 +52,7 @@ class Hash(CryptographicConstantBaseClass):
 
     def __repr__(self) -> str:
         return "HASH=" + str(self.value)
+
 
 class Signature(CryptographicConstantBaseClass):
     def __init__(self, signature) -> None:
@@ -68,11 +66,13 @@ class Signature(CryptographicConstantBaseClass):
     def __repr__(self) -> str:
         return "SIGN=" + str(self.value)
 
+
 class AuthentificationKey(CryptographicConstantBaseClass):
     def __init__(self, key) -> None:
         self.value = key
 
     def __hash__(self) -> int:
         return int(self.value)
+
     def __repr__(self) -> str:
         return "AUTH=" + str(self.value)
