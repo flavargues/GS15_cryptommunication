@@ -75,3 +75,4 @@ def fast_exponentiation(base, exponent, modulo):
     base = (base * base) % modulo
     exponent = exponent // 2
   return result
+
