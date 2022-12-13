@@ -1,5 +1,5 @@
-import convert
-import operation
+from utils import convert
+from utils import operation
 
 INITIAL_PERMUTATION = (
     58, 50, 42, 34, 26, 18, 10, 2,

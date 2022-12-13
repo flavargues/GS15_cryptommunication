@@ -1,5 +1,5 @@
-import convert
-import operation
+from utils import convert
+from utils import operation
 
 
 HASH_CONSTANTS = (

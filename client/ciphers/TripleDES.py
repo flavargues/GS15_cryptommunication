@@ -1,6 +1,5 @@
 from DES import DES
-import convert
-
+from utils import convert
 
 class TripleDES:
     def __init__(self, text: bytes, keys: list) -> None:
