@@ -1,4 +1,5 @@
 import convert
+import operation
 
 INITIAL_PERMUTATION = (
     58, 50, 42, 34, 26, 18, 10, 2,
@@ -80,28 +81,6 @@ FINAL_PERMUTATION = (
 )
 
 
-def shift_left(key: list, shift_by: int):
-    result = []
-    for index in range(len(key)):
-        pos = (index+shift_by) % len(key)
-        result.append(key[pos])
-    return result
-
-
-def permute(block: list, array: list, length: int):
-    return [
-        block[array[i]-1]
-        for i in range(length)
-    ]
-
-
-def xor(block1: list, block2: list) -> list:
-    answer = []
-    for i in range(len(block1)):
-        answer.append('0' if (block1[i] == block2[i]) else '1')
-    return answer
-
-
 class DES:
     def __init__(self, text: bytes, key: bytes):
         self.text: list = convert.bytes_to_bin(text)
@@ -111,7 +90,7 @@ class DES:
         self.rpt_initial_block = []
 
     def drop_key_parity_bits(self):
-        self.key = permute(self.key, PERMUTATION_CHOICE_1, 56)
+        self.key = operation.permute(self.key, PERMUTATION_CHOICE_1, 56)
 
     def initial_permutation(self):
         result = [
@@ -119,7 +98,6 @@ class DES:
             for i in range(len(INITIAL_PERMUTATION))
         ]
 
-        print(len(result))
         self.lpt_block = result[:32]
         self.rpt_block = result[32:]
         self.rpt_initial_block = result[32:]
@@ -131,11 +109,11 @@ class DES:
 
         shift_by = 1 if round in [1, 2, 9, 16] else 2
 
-        self.left_key = shift_left(self.left_key, shift_by)
-        self.right_key = shift_left(self.right_key, shift_by)
+        self.left_key = operation.rotate_left(self.left_key, shift_by)
+        self.right_key = operation.rotate_left(self.right_key, shift_by)
 
         temp_key = self.left_key + self.right_key
-        round_key = permute(temp_key, PERMUTATION_CHOICE_2, 48)
+        round_key = operation.permute(temp_key, PERMUTATION_CHOICE_2, 48)
 
         self.round_keys.append(round_key)
 
@@ -146,8 +124,9 @@ class DES:
 
     def expansion_permutation(self):
         round_key = self.round_keys[self.round-1]
-        self.rpt_block = permute(self.rpt_block, EXPANSION_PERMUTATION, 48)
-        self.rpt_block = xor(round_key, self.rpt_block)
+        self.rpt_block = operation.permute(
+            self.rpt_block, EXPANSION_PERMUTATION, 48)
+        self.rpt_block = operation.xor(round_key, self.rpt_block)
 
     def sbox_subsitution(self):
         result = []
@@ -160,10 +139,10 @@ class DES:
         self.rpt_block = result
 
     def pbox_permutation(self):
-        self.rpt_block = permute(self.rpt_block, PBOX, 32)
+        self.rpt_block = operation.permute(self.rpt_block, PBOX, 32)
 
     def xor_and_swap(self):
-        self.lpt_block = xor(self.lpt_block, self.rpt_block)
+        self.lpt_block = operation.xor(self.lpt_block, self.rpt_block)
         if (self.round != 16):
             self.lpt_block, self.rpt_block = self.rpt_initial_block, self.lpt_block
             self.rpt_initial_block = self.rpt_block
@@ -171,74 +150,49 @@ class DES:
             self.rpt_block = self.rpt_initial_block
 
     def final_permutation(self):
-        return permute(
+        return operation.permute(
             self.lpt_block + self.rpt_block, FINAL_PERMUTATION, 64)
 
     def play_round(self):
         self.expansion_permutation()
-        # print("expanded ", convert.bin_to_hex(self.rpt_block))
         self.sbox_subsitution()
-        # print("sbox ", convert.bin_to_hex(self.rpt_block))
         self.pbox_permutation()
-        # print("pbox ", convert.bin_to_hex(self.rpt_block))
         self.xor_and_swap()
-        # print("xor ", convert.bin_to_hex(self.rpt_block))
 
     def encrypt(self):
-        print("Encryption")
-
         self.generate_round_keys()
         self.initial_permutation()
-        print("Initial perm :", convert.bin_to_hex(
-            self.lpt_block+self.rpt_block))
 
         self.round = 1
         while self.round < 17:
             self.play_round()
-            print(
-                "Round", self.round, ":",
-                convert.bin_to_hex(self.lpt_block),
-                convert.bin_to_hex(self.rpt_block),
-                convert.bin_to_hex(self.round_keys[self.round-1]),
-            )
             self.round += 1
 
         cipher_text = self.final_permutation()
         return convert.bin_to_bytes(cipher_text)
 
     def decrypt(self):
-        print("Decryption")
-
         self.generate_round_keys()
         self.round_keys.reverse()
-
         self.initial_permutation()
-        print("Initial perm :", convert.bin_to_hex(
-            self.lpt_block+self.rpt_block))
 
         self.round = 1
         while self.round < 17:
             self.play_round()
-            print(
-                "Round", self.round, ":",
-                convert.bin_to_hex(self.lpt_block),
-                convert.bin_to_hex(self.rpt_block),
-                convert.bin_to_hex(self.round_keys[self.round-1]),
-            )
             self.round += 1
 
         plain_text = self.final_permutation()
         return convert.bin_to_bytes(plain_text)
 
 
-if (__name__ == "__main__"):
-    text = b"abcdefgh"
-    key = b"abcdefgh"
+# if (__name__ == "__main__"):
+#     text = b"abcdefgh"
+#     key = b"abcdefgh"
 
-    clear = DES(text=text, key=key)
-    cipher_text = clear.encrypt()
-    print("Cipher Text : ", convert.bytes_to_hex(cipher_text))
+#     clear = DES(text=text, key=key)
+#     cipher_text = clear.encrypt()
+#     print("Cipher Text : ", convert.bytes_to_hex(cipher_text))
 
-    encrypted = DES(text=cipher_text, key=key)
-    plain_text = encrypted.decrypt()
-    print(convert.bytes_to_hex(plain_text))
+#     encrypted = DES(text=cipher_text, key=key)
+#     plain_text = encrypted.decrypt()
+#     print("Plain Text", convert.bytes_to_hex(plain_text))
