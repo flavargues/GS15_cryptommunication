@@ -3,7 +3,11 @@ class CryptographicConstantBaseClass:
         return type(__o) == type(self) and hash(self) == hash(__o)
 
 
-class SymetricKey(CryptographicConstantBaseClass):
+class CryptographicKeyBaseClass(CryptographicConstantBaseClass):
+    pass
+
+
+class SymetricKey(CryptographicKeyBaseClass):
     def __init__(self, key) -> None:
         if not key:
             raise ValueError('"key" can\'t be None.')
@@ -16,7 +20,7 @@ class SymetricKey(CryptographicConstantBaseClass):
         return "SYM=" + str(self.key)
 
 
-class AsymetricKey(CryptographicConstantBaseClass):
+class AsymetricKey(CryptographicKeyBaseClass):
     def __init__(self, pub_key, priv_key=None) -> None:
         if not pub_key:
             raise ValueError('"pub_key" can\'t be None.')
@@ -43,8 +47,8 @@ class AsymetricKey(CryptographicConstantBaseClass):
 
 class Hash(CryptographicConstantBaseClass):
     def __init__(self, hash) -> None:
-        if len(hash) != 256:
-            raise ValueError("SHA-256 hash should be of length 256.")
+        if not hash or len(hash) != 256:
+            raise ValueError("SHA-256 hash should be None or empty, and of length 256.")
         self.value = hash
 
     def __hash__(self) -> int:
