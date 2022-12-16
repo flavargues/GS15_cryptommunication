@@ -1,16 +1,57 @@
+import random
+
+
 class CryptographicConstantBaseClass:
     def __eq__(self, __o: object) -> bool:
         return type(__o) == type(self) and hash(self) == hash(__o)
 
 
 class CryptographicKeyBaseClass(CryptographicConstantBaseClass):
-    pass
+    @classmethod
+    def autoSecureKeyGenerator(cls, length=64) -> int:
+        key = generate_prime(length, 100000)
+        return key
+
+
+def is_prime(n: int, k: int) -> bool:
+    if n <= 1:
+        return False
+
+    s = 0
+    d = n - 1
+    while d % 2 == 0:
+        s += 1
+        d //= 2
+
+    for _ in range(k):
+        a = random.randrange(2, n - 1)
+
+        x = pow(a, d, n)
+        if x == 1 or x == n - 1:
+            continue
+
+        for _ in range(s - 1):
+            x = pow(x, 2, n)
+            if x == n - 1:
+                break
+        else:
+            return False
+
+    return True
+
+
+def generate_prime(bit_length: int, k: int) -> int:
+    while True:
+        p = random.getrandbits(bit_length)
+
+        if is_prime(p, k):
+            return p
 
 
 class SymetricKey(CryptographicKeyBaseClass):
     def __init__(self, key) -> None:
         if not key:
-            raise ValueError('"key" can\'t be None.')
+            key = self.autoSecureKeyGenerator()
         self.key = key
 
     def __hash__(self) -> int:
@@ -23,7 +64,8 @@ class SymetricKey(CryptographicKeyBaseClass):
 class AsymetricKey(CryptographicKeyBaseClass):
     def __init__(self, pub_key, priv_key=None) -> None:
         if not pub_key:
-            raise ValueError('"pub_key" can\'t be None.')
+            pub_key = self.autoSecureKeyGenerator()
+            priv_key = self.autoSecureKeyGenerator()
         self.pub_key = pub_key
         if priv_key and len(pub_key) != len(priv_key):
             raise ValueError("Different length between public and private key.")
