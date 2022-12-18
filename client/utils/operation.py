@@ -66,3 +66,13 @@ def add(*blocks: list['0' or '1'], length: int = 32) -> list['0' or '1']:
         result += convert.bin_to_dec(blocks[index])
 
     return convert.dec_to_bin(result % 2**32, 32)
+
+def fast_exponentiation(base, exponent, modulo):
+  result = 1
+  while exponent > 0:
+    if exponent % 2 == 1:
+      result = (result * base) % modulo
+    base = (base * base) % modulo
+    exponent = exponent // 2
+  return result
+
