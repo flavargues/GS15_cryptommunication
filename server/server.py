@@ -18,7 +18,8 @@ class Server:
     def __init__(self, host=DEFAULT_HOST, port=DEFAULT_PORT) -> None:
         self.clients: set = set()
 
-        self.entrypoint_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.entrypoint_socket = socket.socket(
+            socket.AF_INET, socket.SOCK_STREAM)
         self.entrypoint_socket.bind((host, port))
         logger.info(f"Binding on {DEFAULT_HOST}:{DEFAULT_PORT}.")
 
@@ -31,7 +32,8 @@ class Server:
                 (conn, addr) = self.entrypoint_socket.accept()
                 conn.setblocking(0)
                 logger.debug(f"Connection from {addr}.")
-                self.clients.add(ClientConnection(uuid.uuid1(), conn, self.clients))
+                self.clients.add(ClientConnection(
+                    uuid.uuid1(), conn, self.clients))
                 # TODO hostile challenge, identification & authorization
 
                 # Communicate
