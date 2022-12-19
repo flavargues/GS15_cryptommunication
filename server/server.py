@@ -1,13 +1,15 @@
 import socket
-import uuid
+import threading
+import json
 import logging
 import sys
-import time
+
+from message import format_message
+
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 63258
-
-BUFSIZE = 2048
+BUFFER_SIZE = 2048
 
 
 logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
@@ -16,85 +18,120 @@ logger = logging.getLogger(__name__)
 
 class Server:
     def __init__(self, host=DEFAULT_HOST, port=DEFAULT_PORT) -> None:
-        self.clients: set = set()
-
-        self.entrypoint_socket = socket.socket(
+        self.clients: any = {}
+        self.messages = {}
+        self.socket = socket.socket(
             socket.AF_INET, socket.SOCK_STREAM)
-        self.entrypoint_socket.bind((host, port))
+        self.socket.bind((host, port))
         logger.info(f"Binding on {DEFAULT_HOST}:{DEFAULT_PORT}.")
 
     def run(self):
-        self.entrypoint_socket.listen()
+        self.socket.listen()
+        # self.socket.timeout = 1
         logger.info(f"Listening...")
-        try:
-            while True:
-                # Entry
-                (conn, addr) = self.entrypoint_socket.accept()
-                conn.setblocking(0)
-                logger.debug(f"Connection from {addr}.")
-                self.clients.add(ClientConnection(
-                    uuid.uuid1(), conn, self.clients))
-                # TODO hostile challenge, identification & authorization
 
-                # Communicate
+        while True:
+            (client_socket, address) = self.socket.accept()
+            logger.debug(f"Connection from {address}.")
 
-                self.wake_clients()
-                time.sleep(1)
-        except KeyboardInterrupt:
-            logger.info("Stopping Server...")
-        finally:
-            self.__del__()
+            # Start thread for the new client connection
+            try:
+                client_thread = threading.Thread(
+                    target=self.handle_connection, args=(client_socket,))
+                client_thread.start()
+            except Exception as e:
+                logger.error(f"Error while starting thread: {e}")
+                client_thread.quit()
 
-    def wake_clients(self):
-        for client in self.clients:
-            client.wake()
-
-    def __del__(self):
-        for client in self.clients:
-            client.shutdown()
-        self.entrypoint_socket.shutdown(socket.SHUT_RDWR)
-        self.entrypoint_socket.close()
-        logger.info(f"Server stopped.")
-
-
-class ClientConnection:
-    def __init__(self, uuid, conn: socket.socket, friends: set) -> None:
-        self.uuid = uuid
-        self.conn = conn
-        self.friends = friends
-        self.friends.add(self)
-        logger.info(f"[+] New client {self.uuid}.")
-
-    def __hash__(self) -> int:
-        return int(self.uuid)
-
-    def sendmsg(self, data, ancillary_data=[], flags=0):
-        self.conn.sendmsg([data], ancillary_data, flags)
-        logger.info(f"Sent msg={data}, anc={ancillary_data}; flags={flags}.")
-
-    def wake(self):
-        logger.debug(f"ClientConnection {self} woken up.")
-        data = self.conn.recvmsg(BUFSIZE)
-        if not data:
+    def handle_connection(self, client_socket: socket):
+        client_id = self.connect(client_socket)
+        if not client_id:
             return
-        logger.info(f"Received msg data={data}.")
 
-        logger.debug(f"Begin multicast.")
-        for friend in self.friends - {self}:
-            friend.sendmsg(data)
-            logger.debug(f"Sent data to {friend}.")
-        logger.debug(f"Multicast done.")
+        print("Checking for messages...")
+        new_messages = self.check_for_messages(client_id)
+        if new_messages:
+            for message in new_messages:
+                client_socket.send(message)
 
-    def deconnect(self):
-        # Graceful deconnect
-        pass
+        # Loop until the client disconnects
+        while client_id in self.clients:
+            message = client_socket.recv(BUFFER_SIZE)
+            self.handle_message(client_id, message)
 
-    def shutdown(self):
-        self.conn.detach()
-        # TODO send stop and gracefully detach
-        self.conn.shutdown(socket.SHUT_RDWR)
-        self.conn.close()
-        logger.info(f"[-] Del client {self.uuid}.")
+    def handle_message(self, client_id, message):
+        msg = format_message(message=message)
+        print("Message received: ", msg)
+
+        if msg["action"] == "disconnect":
+            self.disconnect(client_id)
+
+        elif msg["action"] == "message":
+            self.transfer_message(client_id, msg)
+
+    def check_for_messages(self, client_id) -> list:
+        if self.messages.get(client_id):
+            return self.messages.pop(client_id)
+
+    def send_message(self, client_id: str, message: dict):
+        encoded_message = json.dumps(message).encode()
+        self.clients[client_id].send(encoded_message)
+
+    def transfer_message(self, client_id: str, message: dict):
+        message["sender"] = client_id
+        recipient_id = message["recipient"]
+        encoded_message = json.dumps(message).encode()
+        # Check if the recipient is online
+        if recipient_id in self.clients:
+            return self.clients[recipient_id].send(encoded_message)
+        else:
+            self.store_message(recipient_id, encoded_message)
+
+    def store_message(self, client_id: str, encoded_message: bytes):
+        # encoded_message = json.dumps(message).encode()
+        if not self.messages.get(client_id):
+            self.messages[client_id] = [encoded_message]
+        else:
+            self.messages[client_id].append(encoded_message)
+
+    def connect(self, client_socket: socket):
+        message = client_socket.recv(BUFFER_SIZE)
+        msg = format_message(message=message)
+        client_id = msg["client_id"]
+        if not client_id:
+            client_socket.shutdown(socket.SHUT_RDWR)
+            client_socket.close()
+            return
+        # open connection if client is already connected
+        if client_id in self.clients:
+            encoded_message = json.dumps({
+                "action": "connect",
+                "status": "failed"
+            }).encode()
+            client_socket.send(encoded_message)
+            client_socket.shutdown(socket.SHUT_RDWR)
+            client_socket.close()
+            return
+        # add new connection to the list of clients
+        self.clients[client_id] = client_socket
+        self.send_message(client_id, {
+            "action": "connect",
+            "status": "success"}
+        )
+        print(f"Client {client_id} connected")
+        return client_id
+
+    def disconnect(self, client_id: str):
+        # close client socket connection
+        self.send_message(client_id, {
+            "action": "disconnect",
+            "status": "success"}
+        )
+        self.clients[client_id].shutdown(socket.SHUT_RDWR)
+        self.clients[client_id].close()
+        self.clients.pop(client_id)
+        print(f"Client {client_id} disconnected")
+        return
 
 
 s = Server().run()
