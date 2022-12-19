@@ -15,16 +15,17 @@ class Client:
         self.connected = True
         self.id = id
         self.send_message({
-            "action": "connect",
-            "id": self.id
+            "sender": self.id,
+            "protocol": "clear",
+            "service": {
+                "action": "connect"
+            }
         })
-        data = self.socket.recv(BUFFER_SIZE)
-        msg = format_message(data)
-        if msg["status"] == "success":
+        try:
             threading.Thread(target=self.receive).start()
             threading.Thread(target=self.send).start()
-        else:
-            print("Connection failed: ", msg)
+        except:
+            print("Connection failed.")
             self.disconnect()
 
     def send_message(self, message: dict):
@@ -33,19 +34,7 @@ class Client:
     def receive(self):
         while self.connected:
             data = self.socket.recv(BUFFER_SIZE)
-            if not data:
-                break
-            self.handle_message(data)
-
-    def handle_message(self, message):
-        msg = format_message(message=message)
-        print("Message received: ", msg)
-
-        if msg["action"] == "disconnect":
-            self.disconnect()
-
-        elif msg["action"] == "message":
-            print(msg)
+            print("Message received: ", data.decode())
 
     def send(self):
         while self.connected:
@@ -54,20 +43,27 @@ class Client:
                 break
             elif entry:
                 user, text = entry.split(",")
-                payload = '{"action":"message","recipient": "' + \
-                    user + '", "data": "' + text + '"}'
-                print("Payload sent: " + payload)
-                self.socket.send(payload.encode())
+                payload = {
+                    "sender": self.id,
+                    "recipient": user,
+                    "data": text
+                }
+                print("Payload sent: ", payload)
+                self.send_message(payload)
         self.disconnect()
 
     def disconnect(self):
         self.send_message({
-            "action": "disconnect"
+            "sender": self.id,
+            "protocol": "clear",
+            "service": {
+                "action": "disconnect"
+            }
         })
+        self.connected = False
         self.socket.recv(BUFFER_SIZE)
         self.socket.shutdown(socket.SHUT_RDWR)
         self.socket.close()
-        self.connected = False
         print('Client disconnected.')
 
 
