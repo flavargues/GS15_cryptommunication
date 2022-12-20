@@ -62,14 +62,12 @@ class SymetricKey(CryptographicKeyBaseClass):
 
 
 class AsymetricKey(CryptographicKeyBaseClass):
-    def __init__(self, pub_key, priv_key=None) -> None:
+    def __init__(self, pub_key) -> None:
+        self.priv_key = None
         if not pub_key:
             pub_key = self.autoSecureKeyGenerator()
             priv_key = self.autoSecureKeyGenerator()
         self.pub_key = pub_key
-        if priv_key and len(pub_key) != len(priv_key):
-            raise ValueError("Different length between public and private key.")
-        self.priv_key = priv_key
 
     def __eq__(self, __o: object) -> bool:
         if isinstance(__o, AsymetricKey):
