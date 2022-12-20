@@ -39,6 +39,14 @@ class Server:
     def handle_connection(self, client_socket: socket):
         client_id = self.connect(client_socket)
         if not client_id:
+            payload = json.dumps({
+                "protocol": "clear",
+                "service": {
+                    "action": "disconnect"
+                }
+            }).encode()
+            client_socket.send(payload)
+            client_socket.recv(BUFFER_SIZE)
             client_socket.shutdown(socket.SHUT_RDWR)
             client_socket.close()
 
@@ -78,12 +86,20 @@ class Server:
 
         # add new connection to the list of clients
         self.clients[sender_id] = client_socket
+        self.clients[sender_id].send(message)
         logger.debug(f"Client {sender_id} connected to the server")
         return sender_id
 
     def disconnect(self, client_id: str):
         # close client socket connection
-        self.clients[client_id].send(b"disconnect")
+        payload = json.dumps({
+            "protocol": "clear",
+            "service": {
+                "action": "disconnect"
+            }
+        }).encode()
+        self.clients[client_id].send(payload)
+        self.clients[client_id].recv(BUFFER_SIZE)
         self.clients[client_id].shutdown(socket.SHUT_RDWR)
         self.clients[client_id].close()
         self.clients.pop(client_id)

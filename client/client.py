@@ -14,6 +14,7 @@ class Client:
         self.socket.connect((host, port))
         self.connected = True
         self.id = id
+        self.recipients = {}
         self.send_message({
             "sender": self.id,
             "protocol": "clear",
@@ -35,17 +36,43 @@ class Client:
         while self.connected:
             data = self.socket.recv(BUFFER_SIZE)
             print("Message received: ", data.decode())
+            self.handle_message(data)
+
+    def handle_message(self, message: bytes):
+        msg = json.loads(message.decode())
+        if msg["protocol"] == "clear":
+            if msg.get("service"):
+                if msg["service"].get("action") == "connect":
+                    print("Connected to server.")
+                elif msg["service"].get("action") == "disconnect":
+                    self.disconnect()
+        else:
+            print("Message not handled.")
 
     def send(self):
         while self.connected:
-            entry = input("Send message (ex: user,text): ")
-            if entry == "quit" or entry == "exit" or entry == "q":
+            recipient = input("Send message to (q to quit, l to list): ")
+            if recipient == "q":
                 break
-            elif entry:
-                user, text = entry.split(",")
+            elif recipient == "l":
+                print("Recipients: ", self.recipients)
+                continue
+            elif not recipient:
+                continue
+            elif recipient not in self.recipients:
+                print("Recipient not found. Creating new recipient.")
+                # TODO: Key exchange between clients and storage
+                self.recipients[recipient] = {
+                    "identity_key": "identity_key",
+                    "master_secret": "master_secret",
+                    "message_key": "message_key"
+                }
+
+            text = input("Message: ")
+            if recipient and text:
                 payload = {
                     "sender": self.id,
-                    "recipient": user,
+                    "recipient": recipient,
                     "data": text
                 }
                 print("Payload sent: ", payload)
