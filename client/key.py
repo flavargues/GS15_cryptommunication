@@ -68,6 +68,7 @@ class AsymetricKey(CryptographicKeyBaseClass):
             pub_key = self.autoSecureKeyGenerator()
             priv_key = self.autoSecureKeyGenerator()
         self.pub_key = pub_key
+        return pub_key, priv_key
 
     def __eq__(self, __o: object) -> bool:
         if isinstance(__o, AsymetricKey):
@@ -88,7 +89,8 @@ class AsymetricKey(CryptographicKeyBaseClass):
 class Hash(CryptographicConstantBaseClass):
     def __init__(self, hash) -> None:
         if not hash or len(hash) != 256:
-            raise ValueError("SHA-256 hash should be None or empty, and of length 256.")
+            raise ValueError(
+                "SHA-256 hash should be None or empty, and of length 256.")
         self.value = hash
 
     def __hash__(self) -> int:
