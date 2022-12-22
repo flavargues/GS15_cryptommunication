@@ -13,7 +13,7 @@ class CryptographicKeyBaseClass(CryptographicConstantBaseClass):
         return key
 
 
-def is_prime(n: int, k: int) -> bool:
+def is_probable_prime(n: int, k: int) -> bool:
     if n <= 1:
         return False
 
@@ -44,7 +44,7 @@ def generate_prime(bit_length: int, k: int) -> int:
     while True:
         p = random.getrandbits(bit_length)
 
-        if is_prime(p, k):
+        if is_probable_prime(p, k):
             return p
 
 
@@ -67,7 +67,6 @@ class SymetricKey(CryptographicKeyBaseClass):
         return list(bin(self.key)[2:])
 
 
-
 class AsymetricKey(CryptographicKeyBaseClass):
     def __init__(self, pub_key=None) -> None:
         if not pub_key:
@@ -76,7 +75,7 @@ class AsymetricKey(CryptographicKeyBaseClass):
         else:
             self.pub_key = pub_key
             self.priv_key = None
-        return pub_key, priv_key
+        return self.pub_key, self.priv_key
 
     def __eq__(self, __o: object) -> bool:
         if isinstance(__o, AsymetricKey):
@@ -97,8 +96,7 @@ class AsymetricKey(CryptographicKeyBaseClass):
 class Hash(CryptographicConstantBaseClass):
     def __init__(self, hash) -> None:
         if not hash or len(hash) != 256:
-            raise ValueError(
-                "SHA-256 hash should be None or empty, and of length 256.")
+            raise ValueError("SHA-256 hash should be None or empty, and of length 256.")
         self.value = hash
 
     def __hash__(self) -> int:
