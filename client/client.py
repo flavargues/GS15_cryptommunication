@@ -31,6 +31,7 @@ class Client:
         logger.info(f"Connected to {host}:{port} with client ID: {self.id}.")
         self.x3dh: ExtendedTripleDiffieHellman = ExtendedTripleDiffieHellman(
             self.id,
+            1024,
             message["service"]["prime"],
             message["service"]["generator"]
         )
@@ -40,12 +41,13 @@ class Client:
             "service": {
                 "action": "set_keys",
                 "keys": self.x3dh.get_my_public_keys()
-
             }
         })
+        self.socket.settimeout(1.0)
         try:
+            print("Starting listening in new thread...")
             threading.Thread(target=self.receive).start()
-            threading.Thread(target=self.send).start()
+            self.send()
         except:
             print("Connection failed.")
             self.disconnect()
@@ -65,8 +67,11 @@ class Client:
 
     def receive(self):
         while self.connected:
-            data = self.receive_message()
-            self.handle_message(data)
+            try:
+                data = self.receive_message()
+                self.handle_message(data)
+            except socket.timeout:
+                pass
 
     def handle_message(self, message: str):
         msg = json.loads(message)
@@ -74,24 +79,31 @@ class Client:
             if msg.get("service"):
                 if msg["service"].get("action") == "connect":
                     print("Connected to server.")
-                elif msg["service"].get("action") == "disconnect":
-                    self.disconnect()
+                # elif msg["service"].get("action") == "disconnect":
+                #     self.disconnect()
                 elif msg["service"].get("action") == "get_keys":
                     self.x3dh.set_public_keys(
                         msg["recipient"], msg["service"]["keys"], 1024)
                     print(self.x3dh.recipients[msg["recipient"]])
         elif msg["protocol"] == "x3dh":
-            self.x3dh.decrypt(message.encode())
+            self.add_recipient(msg["sender"])
+            decrypted_msg = self.x3dh.decrypt(message.encode())
+            print(decrypted_msg.decode())
 
     def add_recipient(self, recipient: str):
         # Key exchange between clients and storage
-        self.send_message({
-            "recipient": recipient,
-            "protocol": "clear",
-            "service": {
-                "action": "get_keys",
-            }
-        })
+        if not self.x3dh.have_recipient(recipient):
+            self.send_message({
+                "recipient": recipient,
+                "protocol": "clear",
+                "service": {
+                    "action": "get_keys",
+                }
+            })
+            msg = json.loads(self.receive_message())
+            self.x3dh.set_public_keys(
+                msg["recipient"], msg["service"]["keys"], 1024)
+            return True
 
     def send(self):
         while self.connected:
@@ -105,21 +117,14 @@ class Client:
                 continue
             elif not self.x3dh.have_recipient(recipient):
                 print("Recipient not found. Creating new recipient.")
-                self.send_message({
-                    "recipient": recipient,
-                    "protocol": "clear",
-                    "service": {
-                        "action": "get_keys",
-                    }
-                })
-                self.add_recipient(recipient)
 
-            text = input("Message: ")
-            if recipient and text:
-                payload = self.x3dh.encrypt(recipient, text.encode())
-                self.send_message(payload)
+            if self.add_recipient(recipient):
+                text = input("Message: ")
+                if recipient and text:
+                    payload = self.x3dh.encrypt(recipient, text.encode())
+                    self.send_message(payload)
 
-        self.disconnect()
+        return self.disconnect()
 
     def disconnect(self):
         self.send_message({
@@ -129,11 +134,11 @@ class Client:
                 "action": "disconnect"
             }
         })
-        self.connected = False
-        self.receive_message()
         self.socket.shutdown(socket.SHUT_RDWR)
+        self.connected = False
         self.socket.close()
         print('Client disconnected.')
+        return
 
 
 client_id = input("Set the client id: ")

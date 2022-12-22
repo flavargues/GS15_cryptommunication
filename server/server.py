@@ -3,6 +3,7 @@ import threading
 import json
 import logging
 import sys
+import select
 from prime_generator import generate_prime, get_generator
 
 DEFAULT_HOST = "127.0.0.1"
@@ -31,7 +32,24 @@ class Server:
     def run(self):
         self.socket.listen()
         logger.debug("Listening...")
+        threading.Thread(target=self.listen_for_new_clients).start()
 
+        while True:
+            entry = input("Enter command: ")
+            if entry == "exit":
+                break
+            elif entry == "list":
+                print(self.clients)
+            elif entry == "send":
+                recipient = input("Enter recipient: ")
+                message = input("Enter message: ")
+                self.send_message(recipient, message)
+            elif not entry:
+                continue
+            else:
+                print("Unknown command.")
+
+    def listen_for_new_clients(self):
         while True:
             (client_socket, address) = self.socket.accept()
             logger.debug(f"Connection from {address}.")

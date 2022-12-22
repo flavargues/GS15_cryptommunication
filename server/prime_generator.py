@@ -32,7 +32,6 @@ def generate_prime(bit_length: int, k: int) -> int:
     while True:
         p = random.getrandbits(bit_length)
         if is_prime(p, k):
-            print("Prime found")
             return p
 
 
@@ -45,7 +44,5 @@ def get_generator(prime: int, number: int = 1000) -> int:
             generators.append(g)
 
     r = random.randint(0, number-1)
-    g = generators[r]
-    print("Generator:", g)
-    print("Prime:", prime)
-    return g
+    generator = generators[r]
+    return generator

@@ -1,17 +1,6 @@
-# Conversions
-def bin_to_bytes(bits: list) -> bytes:
-    number = int(''.join(bits), 2)
-    text = number.to_bytes((number.bit_length()+7)//8, 'big')
-    return text
-
-
-def bin_to_dec(bits: list) -> int:
-    return int(''.join(bits), 2)
-
-
-def hex_to_bin(value, length: int) -> list:
+def hex_to_bin(value, length: int) -> str:
     bits = bin(int(value))[2:].zfill(length)
-    return [bit for bit in bits]
+    return bits
 
 
 def bytes_to_bin(bytes: bytes, length: int = 8) -> list:
@@ -20,62 +9,62 @@ def bytes_to_bin(bytes: bytes, length: int = 8) -> list:
     return [bit for bit in bits]
 
 
-def dec_to_bin(number: int, length: int) -> list:
-    bits = bin(number)[2:].zfill(length)
-    return [bit for bit in bits]
+def dec_to_bin(number: int, length: int) -> str:
+    return bin(number)[2:].zfill(length)
 
 
 # Operations
-def shift_right(block: list, shift_by: int) -> list:
-    result = shift_by*['0'] + block
+def shift_right(block: str, shift_by: int) -> str:
+    result = shift_by*'0' + block
     return result[:len(block)]
 
 
-def rotate_right(block: list, shift_by: int) -> list:
-    result = []
+def rotate_right(block: str, shift_by: int) -> str:
+    result = ''
     for index in range(len(block)):
         pos = (index-shift_by) % len(block)
-        result.append(block[pos])
+        result += block[pos]
     return result
 
 
-def xor(*blocks: list) -> list:
+def xor(*blocks) -> str:
     result = blocks[0]
-    for index in range(1, len(blocks)):
+    for b_index in range(1, len(blocks)):
+        xand_result = ''
         block1 = result
-        block2 = blocks[index]
-        result = [
-            '1' if (block1[i] != block2[i]) else '0'
-            for i in range(len(block1))
-        ]
+        block2 = blocks[b_index]
+        for i in range(len(block1)):
+            xand_result += '1' if (block1[i] != block2[i]) else '0'
+        result = xand_result
     return result
 
 
-def xand(*blocks: list) -> list:
+def xand(*blocks) -> str:
     result = blocks[0]
-    for index in range(1, len(blocks)):
+    for b_index in range(1, len(blocks)):
+        xand_blocks = ''
         block1 = result
-        block2 = blocks[index]
-        result = [
-            '1' if (block1[i] == block2[i] and block1[i] == '1') else '0'
-            for i in range(len(block1))
-        ]
+        block2 = blocks[b_index]
+        for i in range(len(block1)):
+            xand_blocks += '1' if (block1[i] == block2[i]
+                                   and block1[i] == '1') else '0'
+        result = xand_blocks
     return result
 
 
-def xnot(block1: list) -> list:
-    return [
-        '1' if (block1[i] == '0') else '0'
-        for i in range(len(block1))
-    ]
+def xnot(block1: str) -> str:
+    result = ''
+    for i in range(len(block1)):
+        result += '1' if (block1[i] == '0') else '0'
+    return result
 
 
-def add(*blocks: list, length: int = 32) -> list:
-    result = bin_to_dec(blocks[0])
+def add(*blocks: str, length: int = 32) -> str:
+    result = int(blocks[0], 2)
     for index in range(1, len(blocks)):
-        result += bin_to_dec(blocks[index])
+        result += int(blocks[index], 2)
 
-    return dec_to_bin(result % 2**32, 32)
+    return dec_to_bin(result % 2**length, length)
 
 
 HASH_CONSTANTS = (
@@ -100,37 +89,42 @@ ROUND_CONSTANTS = (
 )
 
 
-def get_word(message_schedule: list, index: int, length: int = 32):
+def get_word(message_schedule: str, index: int, length: int = 32):
     begin = index*length
     end = begin+length
     return message_schedule[begin:end]
 
 
-def set_word(message_schedule: list, index: int, word_value: list, length: int = 32):
+def set_word(message_schedule: str, index: int, word_value: str, length: int = 32):
     begin = index*length
     end = begin+length
     return message_schedule[:begin] + word_value + message_schedule[end:]
 
 
-def SHA256(text: bytes) -> bytes:
+def SHA256(text: int) -> int:
     # Preprocessing
-    bin_text = bytes_to_bin(text)
-    payload_length = len(text)+64+1
-    message_block = bin_text + ['1']
-    zeros = (512 - payload_length % 512)*['0']
+    text_length = (text.bit_length()+7)//8*8
+    bin_text = dec_to_bin(
+        text, text_length
+    )
+
+    payload_length: int = len(bin_text)+64+1
+    message_block: str = bin_text + '1'
+    zeros: str = (512 - payload_length % 512)*'0'
     message_block += zeros + dec_to_bin(len(bin_text), 64)
 
     # Chunk loop
     hash_values = [
         hex_to_bin(HASH_CONSTANTS[i], 32) for i in range(len(HASH_CONSTANTS))
     ]
+
     for chunk_index in range(len(message_block)//512):
-        begin = 512*chunk_index
-        end = begin+512
-        chunk = message_block[begin:end]
+        begin: int = 512*chunk_index
+        end: int = begin+512
+        chunk: str = message_block[begin:end]
 
         # Create message schedule
-        message_schedule = chunk + (48*32)*['0']
+        message_schedule: str = chunk + (48*32)*'0'
         for word_index in range(16, 64):
             w_i_15 = get_word(message_schedule, word_index-15)
             w_i_2 = get_word(message_schedule, word_index-2)
@@ -188,29 +182,28 @@ def SHA256(text: bytes) -> bytes:
             b = a
             a = add(temp1, temp2)
 
-        working_variables = [a, b, c, d, e, f, g, h]
-
         # Modify final values
         hash_values = [
-            add(hash_values[0], working_variables[0]),
-            add(hash_values[1], working_variables[1]),
-            add(hash_values[2], working_variables[2]),
-            add(hash_values[3], working_variables[3]),
-            add(hash_values[4], working_variables[4]),
-            add(hash_values[5], working_variables[5]),
-            add(hash_values[6], working_variables[6]),
-            add(hash_values[7], working_variables[7]),
+            add(hash_values[0], a),
+            add(hash_values[1], b),
+            add(hash_values[2], c),
+            add(hash_values[3], d),
+            add(hash_values[4], e),
+            add(hash_values[5], f),
+            add(hash_values[6], g),
+            add(hash_values[7], h),
         ]
 
     # Concatenate final values and return the digest
-    digest = []
+    digest = ""
     for i in range(8):
         digest += hash_values[i]
-    return bin_to_bytes(digest)
+    return int(digest, 2)
 
 
 # if (__name__ == "__main__"):
-#     sha = SHA256(
-#         b"azertyuiopqsdfghjklmwxcvbnazertyuiopqsdfghjklmwxcvbnazertyuiopqsdfghjklmwxcvbnazertyuiopqsdfghjklmwxcvbn")
-#     print(sha)
+#     text = "ghdjeksljhwdejskjflk,czenklsqfsmkekdfn,nedffc,nqkf,clmzea,nkhfkzelmnjfcbezkjlflkcnzel   jkznflnc".encode()
+#     int_text = int.from_bytes(text, byteorder='big')
+#     sha = SHA256(int_text)
+#     print(hex(sha))
 #     pass
