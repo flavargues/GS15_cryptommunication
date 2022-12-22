@@ -1,8 +1,8 @@
 import random
 import json
-from SHA256 import SHA256
-from ciphers.DES import DES
-from ciphers.TripleDES import TripleDES
+from .SHA256 import SHA256
+from .ciphers.DES import DES
+from .ciphers.TripleDES import TripleDES
 
 
 def dec_to_bin(number: int, length: int) -> str:
@@ -165,6 +165,7 @@ class ExtendedTripleDiffieHellman:
         self.recipients[recipient]["keys"]["ephemeral"] = None
 
     def update_ephemeral_keys(self, recipient: str) -> None:
+        print("Updating my ephemeral keys for", recipient)
         self.recipients[recipient]["my_keys"]["ephemeral"] = generate_keys(
             self.prime, self.generator, 1024
         )
@@ -174,7 +175,7 @@ class ExtendedTripleDiffieHellman:
         int_data: int = int.from_bytes(data, "big")
 
         # Check if the other part has updated his ephemeral keys
-        if self.recipients[recipient]["update_ephemeral_keys"]:
+        if self.recipients[recipient]["update_ephemeral_keys"] == True:
             self.update_ephemeral_keys(recipient)
             self.recipients[recipient]["update_ephemeral_keys"] = False
 
@@ -228,7 +229,7 @@ class ExtendedTripleDiffieHellman:
                 "public_key": int.from_bytes(self.recipients[recipient]["my_keys"]["ephemeral"][0], "big"),
             },
             "data": int(cipher_data, 2),
-            "checksum": SHA256(int(cipher_data, 2))
+            "checksum": SHA256(int(bin_data, 2))
         }
 
         return json.dumps(message).encode()
@@ -279,6 +280,7 @@ class ExtendedTripleDiffieHellman:
             plain_data += TripleDES(block, bin_key).decrypt()
 
         # integrity check
+        # print(checksum, SHA256(int(plain_data, 2)))
         if checksum != SHA256(int(plain_data, 2)):
             return b""
 

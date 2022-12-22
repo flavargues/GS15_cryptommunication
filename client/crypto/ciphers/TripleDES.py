@@ -44,7 +44,6 @@ class TripleDES:
 
 
 # if (__name__ == "__main__"):
-
 #     text = "bnbnh,j".encode()
 #     text = dec_to_bin(int.from_bytes(text, byteorder='big'), 64)
 #     key = b"hsdbxhzsislfjjzehhsdnwoz"

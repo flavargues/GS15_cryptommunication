@@ -32,34 +32,43 @@ class Server:
     def run(self):
         self.socket.listen()
         logger.debug("Listening...")
-        threading.Thread(target=self.listen_for_new_clients).start()
+        self.listening = True
+        listen_thread = threading.Thread(target=self.listen_for_new_clients)
+        listen_thread.start()
 
         while True:
             entry = input("Enter command: ")
-            if entry == "exit":
+            if entry == "q":
                 break
-            elif entry == "list":
-                print(self.clients)
-            elif entry == "send":
-                recipient = input("Enter recipient: ")
-                message = input("Enter message: ")
-                self.send_message(recipient, message)
+            elif entry == "l":
+                print(self.clients.keys())
             elif not entry:
                 continue
-            else:
-                print("Unknown command.")
+
+        self.listening = False
+        listen_thread.join()
+        self.socket.close()
 
     def listen_for_new_clients(self):
-        while True:
-            (client_socket, address) = self.socket.accept()
-            logger.debug(f"Connection from {address}.")
-
+        self.socket.settimeout(0.2)
+        while self.listening:
             try:
+                client_socket, address = self.socket.accept()
                 client_thread = threading.Thread(
-                    target=self.handle_connection, args=(client_socket,))
+                    target=self.listen_for_message, args=(client_socket,))
                 client_thread.start()
-            except:
-                logger.debug("Error: unable to start thread")
+            except socket.timeout:
+                pass
+
+
+    def listen_for_message(self, client_socket: socket.socket):
+        client_id: str = self.connect(client_socket)
+        if not client_id:
+            return
+
+        while self.listening and self.clients[client_id]["socket"]:
+            message = self.receive_message(client_id)
+            self.handle_message(client_id, message)
 
     def send_message(self, client, message):
         if type(client) is str:
@@ -82,32 +91,14 @@ class Server:
         print(f"Message received from {client}: ", data)
         return data
 
-    def handle_connection(self, client_socket: socket.socket):
-        client_id: str = self.connect(client_socket)
-        if not client_id:
-            self.send_message(client_id, {
-                "protocol": "clear",
-                "service": {
-                    "action": "disconnect"
-                }
-            })
-            client_socket.recv(BUFFER_SIZE)
-            client_socket.shutdown(socket.SHUT_RDWR)
-            client_socket.close()
-            return
-
-        # Loop until the client disconnects
-        while client_id in self.clients:
-            message = self.receive_message(client_id)
-            self.handle_message(client_id, message)
-
     def handle_message(self, client_id: str, message: str):
         msg = json.loads(message)
 
         if msg.get("protocol") == "clear":
             if msg.get("service"):
                 if msg["service"].get("action") == "disconnect":
-                    return self.disconnect(client_id)
+                    self.clients[client_id]["socket"] = None
+                    return
                 elif msg["service"].get("action") == "set_keys":
                     self.clients[client_id]["keys"] = msg["service"]["keys"]
                     return
@@ -181,22 +172,11 @@ class Server:
         logger.debug(f"Client {sender_id} connected to the server")
         return sender_id
 
-    def disconnect(self, client):
+    def disconnect(self, client_socket: socket.socket):
         # close client socket connection
-        payload = {
-            "protocol": "clear",
-            "service": {
-                "action": "disconnect"
-            }
-        }
-        self.send_message(client, payload)
-        if type(client) is str:
-            client = self.clients[client]["socket"]
-            self.clients[client]["socket"] = None
-        client.recv(BUFFER_SIZE)
-        client.shutdown(socket.SHUT_RDWR)
-        client.close()
-        logger.debug(f"Client {client} disconnected")
+        client_socket.shutdown(socket.SHUT_RDWR)
+        client_socket.close()
+        logger.debug(f"Client {client_socket} disconnected")
         return
 
 
