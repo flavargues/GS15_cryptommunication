@@ -49,7 +49,7 @@ def generate_prime(bit_length: int, k: int) -> int:
 
 
 class SymetricKey(CryptographicKeyBaseClass):
-    def __init__(self, key) -> None:
+    def __init__(self, key=None) -> None:
         if not key:
             key = self.autoSecureKeyGenerator()
         self.key = key
@@ -60,14 +60,22 @@ class SymetricKey(CryptographicKeyBaseClass):
     def __repr__(self) -> str:
         return "SYM=" + str(self.key)
 
+    def bin_str(self):
+        return str(bin(self.key))
+
+    def bin_list(self):
+        return list(bin(self.key)[2:])
+
+
 
 class AsymetricKey(CryptographicKeyBaseClass):
-    def __init__(self, pub_key) -> None:
-        self.priv_key = None
+    def __init__(self, pub_key=None) -> None:
         if not pub_key:
-            pub_key = self.autoSecureKeyGenerator()
-            priv_key = self.autoSecureKeyGenerator()
-        self.pub_key = pub_key
+            self.pub_key = self.autoSecureKeyGenerator()
+            self.priv_key = self.autoSecureKeyGenerator()
+        else:
+            self.pub_key = pub_key
+            self.priv_key = None
         return pub_key, priv_key
 
     def __eq__(self, __o: object) -> bool:
