@@ -8,15 +8,53 @@ class A5_1:
     T3 = {7, 20, 21, 22} - {22}
 
     def __init__(
-        self, key: SymetricKey, frame_counter, bearer, direction, data
+        self, key: SymetricKey, frame_counter, direction, data
     ) -> None:
         self.key = key.bin_list()
         if len(frame_counter) != 22:
             raise ValueError("Frame frame_counterer length should be 22.")
         self.frame_counter = list(frame_counter)
-        self.bearer = bearer
-        self.direction = direction
+        self.direction = direction # for duplex only
         self.data = data
+        self.step1()
+
+
+    def step1(self):
+        # Initializing the LFSRs
+        self.R1 = [0] * 19
+        self.R2 = [0] * 22
+        self.R3 = [0] * 23
+        self.Rs = [self.R1, self.R2, self.R3]
+        self.step2()
+
+    def step2(self):
+        # Clocking LFSRs with session key
+        for keybit in self.key:
+            self.__feed(keybit, keybit, keybit)
+        self.step3()
+
+    def step3(self):
+        # Clocking LFSRs with frame counter
+        for keybit in self.frame_counter:
+            self.__feed(keybit, keybit, keybit)
+        self.step4()
+
+    def step4(self):
+        # Clocking LFSRs with majority vote
+        for _ in range(100):
+            self.__irregular_clocking()
+        self.step5()
+
+    def step5(self):
+        # Production of key stream
+        self.key_stream = list()
+        for _ in range(228):
+            self.key_stream.append(self.__irregular_clocking())
+
+    def step6(self):
+        cipher_data = list()
+        for key_stream, data_stream in zip(self.key_stream, self.data):
+            cipher_data.append(key_stream ^ data_stream)
 
     def __clock(self):
         output1 = self.R1[-1]
@@ -53,39 +91,3 @@ class A5_1:
         self.R1.append(N1)
         self.R2.append(N2)
         self.R3.append(N3)
-
-    def step1(self):
-        # Initializing the LFSRs
-        self.R1 = [0] * 19
-        self.R2 = [0] * 22
-        self.R3 = [0] * 23
-        self.Rs = [self.R1, self.R2, self.R3]
-        self.step2()
-
-    def step2(self):
-        # Clocking LFSRs with session key
-        for keybit in self.key:
-            self.__feed(keybit, keybit, keybit)
-        self.step3()
-
-    def step3(self):
-        # Clocking LFSRs with frame counter
-        for keybit in self.frame_counter:
-            self.__feed(keybit, keybit, keybit)
-        self.step4()
-
-    def step4(self):
-        # Clocking LFSRs with majority vote
-        for _ in range(100):
-            self.__irregular_clocking()
-        self.step5()
-
-    def step5(self):
-        # Production of key stream
-        self.key_stream = list()
-        for _ in range(228):
-            self.key_stream.append(self.__irregular_clocking())
-
-    def step6(self):
-        # Creating cipher text
-        pass
