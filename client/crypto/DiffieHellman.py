@@ -43,14 +43,14 @@ def generate_prime(bit_length: int, k: int) -> bytes:
             return p.to_bytes(bit_length//8, "big")
 
 
-def fast_exponentiation(base: int, exponent: int, modulus: int) -> int:
-    result = 1
-    while exponent > 0:
-        if exponent % 2 == 1:
-            result = (result * base) % modulus
-        exponent = exponent >> 1
-        base = (base * base) % modulus
-    return result
+# def fast_exponentiation(base: int, exponent: int, modulus: int) -> int:
+#     result = 1
+#     while exponent > 0:
+#         if exponent % 2 == 1:
+#             result = (result * base) % modulus
+#         exponent = exponent >> 1
+#         base = (base * base) % modulus
+#     return result
 
 
 def generate_keys(prime: int, generator: int, length: int) -> tuple:
