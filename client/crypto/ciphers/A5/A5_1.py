@@ -7,20 +7,33 @@ class A5_1:
     T2 = {20, 21} - {21}
     T3 = {7, 20, 21, 22} - {22}
 
-    def __init__(
-        self, key: SymetricKey, frame_counter, direction, data
-    ) -> None:
+    def __init__(self, key: SymetricKey, frame_counter, direction, data) -> None:
+        # Cette méthode est le constructeur de la classe. Elle initialise les différents
+        # attributs de l'objet et appelle la méthode step1 qui initialise les registres de LFSR.
+
         self.key = key.bin_list()
         if len(frame_counter) != 22:
             raise ValueError("Frame frame_counterer length should be 22.")
         self.frame_counter = list(frame_counter)
-        self.direction = direction # for duplex only
+        self.direction = direction  # for duplex only
         self.data = data
         self.step1()
 
+    def encrypt(self):
+        # Cette méthode chiffre les données en utilisant le flux de clé produit par
+        # l'algorithme.
+
+        return self.output
+
+    def decrypt(self):
+        # Cette méthode déchiffre les données en utilisant le flux de clé produit par
+        # l'algorithme.
+
+        return self.output
 
     def step1(self):
-        # Initializing the LFSRs
+        # Cette méthode initialise les trois registres de LFSR à zéro.
+
         self.R1 = [0] * 19
         self.R2 = [0] * 22
         self.R3 = [0] * 23
@@ -28,35 +41,53 @@ class A5_1:
         self.step2()
 
     def step2(self):
-        # Clocking LFSRs with session key
+        # Cette méthode utilise la clé de chiffrement pour mettre à jour les registres
+        # de LFSR. Elle parcourt la clé binaire et pour chaque bit, elle appelle la méthode __feed qui insère le bit dans les registres de LFSR.
+
         for keybit in self.key:
             self.__feed(keybit, keybit, keybit)
         self.step3()
 
     def step3(self):
-        # Clocking LFSRs with frame counter
+        # Cette méthode utilise le compteur de trame pour mettre à jour les registres
+        # de LFSR. Elle parcourt le compteur de trame binaire et pour chaque bit,
+        # elle appelle la méthode __feed qui insère le bit dans les registres de LFSR.
+
         for keybit in self.frame_counter:
             self.__feed(keybit, keybit, keybit)
         self.step4()
 
     def step4(self):
-        # Clocking LFSRs with majority vote
+        # Cette méthode utilise une majorité de vote pour mettre à jour les registres
+        # de LFSR. Elle appelle la méthode __irregular_clocking 100 fois pour mettre
+        # à jour les registres de LFSR.
+
         for _ in range(100):
             self.__irregular_clocking()
         self.step5()
 
     def step5(self):
-        # Production of key stream
+        # Cette méthode produit le flux de clé qui sera utilisé pour chiffrer/déchiffrer
+        # les données. Elle appelle la méthode
         self.key_stream = list()
         for _ in range(228):
             self.key_stream.append(self.__irregular_clocking())
 
     def step6(self):
-        cipher_data = list()
-        for key_stream, data_stream in zip(self.key_stream, self.data):
-            cipher_data.append(key_stream ^ data_stream)
+        # Cette méthode chiffre/déchiffre les données en utilisant le flux de clé
+        # produit par l'algorithme. Elle parcourt le flux de clé et les données
+        # binaires et calcule le XOR de chaque bit. Le résultat est converti en bytes
+        # et stocké
+        xored_data = str()
+        binary_text = list(bin(self.data)[2:])
+        for key_stream, data_stream in zip(self.key_stream, binary_text):
+            xored_data += key_stream ^ data_stream
+
+        bin_str = "".join(map(str, xored_data))
+        self.output = bytes(int(bin_str, 2))
 
     def __clock(self):
+        # Cette méthode fait faire un cycle à chaque LSFR et renvoie sorties de chacun
         output1 = self.R1[-1]
         for tap in self.T1:
             output1 ^= self.R1[tap]
@@ -69,6 +100,8 @@ class A5_1:
         return output1, output2, output3
 
     def __irregular_clocking(self):
+        # Cette méthode effectue le tour d'horloge par vote avec majorité. Elle trouve
+        # la valeur de majorité et fait avancer les les LSFR qui l'ont
         outputs = self.__clock()
         if outputs.count(0) >= 2:
             majority = 0
@@ -81,10 +114,13 @@ class A5_1:
         return outputs[0] ^ outputs[1] ^ outputs[2]
 
     def __shift(self, register_index, input):
+        # Cette méthode effectue un shift sur le LSFR donné dans le cadre du tour
+        # d'horloge avec vote par majorité
         self.Rs[register_index].pop(0)
         self.Rs[register_index].append(input)
 
     def __feed(self, N1, N2, N3):
+        # Cette méthode insère des bits dans les LSFR
         self.R1.pop(0)
         self.R2.pop(0)
         self.R3.pop(0)
