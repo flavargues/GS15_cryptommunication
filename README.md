@@ -1,9 +1,9 @@
 # GS15_cryptommunication
 
 This project is for a secure messaging application.
-It uses eXtended Triple Diffie Hellman (X3DH), Triple Data Encryption Standard (3DES) and A5_1.
+It uses eXtended Triple Diffie Hellman (X3DH), Triple Data Encryption Standard (3DES) and A5/1.
 
-## Retiur d'experience
+## Retour d'experience
 
 ddddddd
 
@@ -28,9 +28,17 @@ Pour l'implémentation, nous avons décidé d'attribuer à chaque client un obje
 
 La première étape pour mettre en place 3DES, ça a été de faire DES. Les entrées et les sorties de ces deux classes sont des chaines binaires. Pour DES, il a fallu comprendre l'algorithme de chiffrement et gérer les blocs entre chacun des seize itérations. Une fois que cela a été fait, il a juste fallu coder les différentes étapes.
 
-### A5_1
+### A5/1
 
-ici
+Pour A5/1, la plus grande difficulté était de trouver une source fiable pour le fonctionnement de l'algorithme. En effet, l'algorithme n'est pas officiellement publié et il existe de multiples sources surtout peu fiables et détaillées. Finalement, j'ai trouvé une source fiable dans la papier de recherche :
+>A5 Encryption in GSM
+>
+>Oliver Damsgaard Jensen
+>
+>Kristoffer Alvern Andersen
+
+Après avoir trouvé cette source, il a fallu implémenter cette algorithme de chiffrement. Nous l'avons mis en place pour les messages, c'est-à-dire, dans un sens uniquement. Or, A5/1 est un algorithme de chiffrement pour les appels téléphoniques GSM, c'est-à-dire en actif-actif. Notre système de messagerie est actif-passif et donc il a fallu adapter l'algorithme pour qu'il puisse fonctionner malgré tout.
+
 
 ### SHA256
 

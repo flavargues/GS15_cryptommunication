@@ -1,4 +1,4 @@
-from ....key import SymetricKey
+from math import ceil
 
 
 class A5_1:
@@ -7,7 +7,7 @@ class A5_1:
     T2 = {20, 21} - {21}
     T3 = {7, 20, 21, 22} - {22}
 
-    def __init__(self, key: SymetricKey, frame_counter, direction, data) -> None:
+    def __init__(self, key, frame_counter, direction, data) -> None:
         # Cette méthode est le constructeur de la classe. Elle initialise les différents
         # attributs de l'objet et appelle la méthode step1 qui initialise les registres de LFSR.
 
@@ -45,6 +45,7 @@ class A5_1:
         # de LFSR. Elle parcourt la clé binaire et pour chaque bit, elle appelle la méthode __feed qui insère le bit dans les registres de LFSR.
 
         for keybit in self.key:
+            keybit = int(keybit)
             self.__feed(keybit, keybit, keybit)
         self.step3()
 
@@ -54,7 +55,8 @@ class A5_1:
         # elle appelle la méthode __feed qui insère le bit dans les registres de LFSR.
 
         for keybit in self.frame_counter:
-            self.__feed(keybit, keybit, keybit)
+            N1, N2, N3 = self.__clock()
+            self.__feed(keybit ^ N1, keybit ^ N2, keybit ^ N3)
         self.step4()
 
     def step4(self):
@@ -72,6 +74,7 @@ class A5_1:
         self.key_stream = list()
         for _ in range(228):
             self.key_stream.append(self.__irregular_clocking())
+        self.step6()
 
     def step6(self):
         # Cette méthode chiffre/déchiffre les données en utilisant le flux de clé
@@ -79,12 +82,11 @@ class A5_1:
         # binaires et calcule le XOR de chaque bit. Le résultat est converti en bytes
         # et stocké
         xored_data = str()
-        binary_text = list(bin(self.data)[2:])
+        binary_text = [int(x) for x in self.text_to_bits(self.data)]
         for key_stream, data_stream in zip(self.key_stream, binary_text):
-            xored_data += key_stream ^ data_stream
+            xored_data += str(key_stream ^ data_stream)
 
-        bin_str = "".join(map(str, xored_data))
-        self.output = bytes(int(bin_str, 2))
+        self.output = self.text_from_bits(xored_data)
 
     def __clock(self):
         # Cette méthode fait faire un cycle à chaque LSFR et renvoie sorties de chacun
@@ -127,3 +129,12 @@ class A5_1:
         self.R1.append(N1)
         self.R2.append(N2)
         self.R3.append(N3)
+
+    # Convertir du texte en binaire
+    def text_to_bits(self, text):
+        bits = bin(int.from_bytes(bytes(text), "big"))[2:]
+        return bits.zfill(8 * ((len(bits) + 7) // 8))
+
+    # Convertir du binaire en texte
+    def text_from_bits(self, bits):
+        return int(bits, 2).to_bytes(ceil(len(bits) / 8) + 1, "big")
