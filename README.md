@@ -60,7 +60,7 @@ Pour SHA256, l'algorithme était plus complexe à comprendre et la récursion su
 
 3. Communiquer
 
-3. Fermer le serveur et les clients avec `Ctrl+C`.
+4. Fermer le serveur et les clients avec `Ctrl+C`.
 
 
 ## Credits

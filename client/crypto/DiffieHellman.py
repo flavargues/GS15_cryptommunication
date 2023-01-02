@@ -45,7 +45,7 @@ def generate_prime(bit_length: int, k: int) -> bytes:
 
 
 def generate_keys(prime: int, generator: int, length: int) -> tuple:
-    private_key = generate_prime(length, 1000)
+    private_key = generate_prime(length, 3)
     int_priv = int.from_bytes(private_key, "big")
     public_key = pow(
         generator, int_priv, prime
