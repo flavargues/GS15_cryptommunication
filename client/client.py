@@ -74,8 +74,9 @@ class Client:
             elif not self.x3dh.have_recipient(recipient):
                 print("Recipient not found. Creating new recipient, please wait...")
                 self.add_recipient(recipient)
+
             # send message to recipient if recipient exists
-            elif self.x3dh.have_recipient(recipient):
+            if self.x3dh.have_recipient(recipient):
                 text = input("Message: ")
                 if recipient and text:
                     payload = self.x3dh.encrypt(recipient, text.encode())
@@ -112,9 +113,9 @@ class Client:
         if msg["protocol"] == "clear":
             if msg.get("service"):
                 if msg["service"].get("action") == "get_keys":
-                    self.x3dh.set_public_keys(
-                        msg["recipient"], msg["service"]["keys"], 1024)
-                    print(self.x3dh.recipients[msg["recipient"]])
+                    # self.x3dh.set_public_keys(
+                    #     msg["recipient"], msg["service"]["keys"], 1024)
+                    print("Recipient added: ", msg["recipient"])
         # if protocol is x3dh, decrypt message and if new recipient, add to client's database
         elif msg["protocol"] == "x3dh":
             self.add_recipient(msg["sender"])
@@ -136,7 +137,6 @@ class Client:
             msg = json.loads(self.receive_message())
             self.x3dh.set_public_keys(
                 msg["recipient"], msg["service"]["keys"], 1024)
-            return True
 
     def disconnect(self):
         # send disconnect request to server
