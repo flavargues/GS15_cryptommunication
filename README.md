@@ -28,6 +28,11 @@ Pour l'implémentation, nous avons décidé d'attribuer à chaque client un obje
 
 La première étape pour mettre en place 3DES, ça a été de faire DES. Les entrées et les sorties de ces deux classes sont des chaines binaires. Pour DES, il a fallu comprendre l'algorithme de chiffrement et gérer les blocs entre chacun des seize itérations. Une fois que cela a été fait, il a juste fallu coder les différentes étapes.
 
+Les ressources utiles:
+
+- [Complément : Le protocole Signal (comment Whatsapp et Signal sécurisent les messages)](https://www.youtube.com/watch?v=6YVQOyhzGx4)
+- [Demystifying the Signal Protocol for End-to-End Encryption (E2EE)](https://medium.com/@justinomora/demystifying-the-signal-protocol-for-end-to-end-encryption-e2ee-ad6a567e6cb4)
+
 ### A5/1
 
 Pour A5/1, la plus grande difficulté était de trouver une source fiable pour le fonctionnement de l'algorithme. En effet, l'algorithme n'est pas officiellement publié et il existe de multiples sources surtout peu fiables et détaillées. Finalement, j'ai trouvé une source fiable dans la papier de recherche :
@@ -39,10 +44,14 @@ Pour A5/1, la plus grande difficulté était de trouver une source fiable pour l
 
 Après avoir trouvé cette source, il a fallu implémenter cette algorithme de chiffrement. Nous l'avons mis en place pour les messages, c'est-à-dire, dans un sens uniquement. Or, A5/1 est un algorithme de chiffrement pour les appels téléphoniques GSM, c'est-à-dire en actif-actif. Notre système de messagerie est actif-passif et donc il a fallu adapter l'algorithme pour qu'il puisse fonctionner malgré tout.
 
-
 ### SHA256
 
 Pour SHA256, l'algorithme était plus complexe à comprendre et la récursion sur les messages schedules aussi. Il a fallu plus de temps pour donner un fonction qui retourne un hash correct.
+
+Les ressources utiles:
+
+- [Sha256algorithm](https://sha256algorithm.com/)
+- [What is SHA-256?](https://blog.boot.dev/cryptography/how-sha-2-works-step-by-step-sha-256/)
 
 ## Usage
 
@@ -52,7 +61,7 @@ Pour SHA256, l'algorithme était plus complexe à comprendre et la récursion su
     python3 server.py
     ```
 
-2. Connecter `n` clients dans d'autres consoles.
+2. Connecter `n` clients dans d'autres consoles puis saisir leur nom d'utilisateur qui doit être unique.
 
     ```console
     python3 client.py
@@ -60,8 +69,17 @@ Pour SHA256, l'algorithme était plus complexe à comprendre et la récursion su
 
 3. Communiquer
 
-4. Fermer le serveur et les clients avec `Ctrl+C`.
+    Les clients peuvent chacun s'envoyer des messages.
+    Si le client n'a pas les clés du destinataire, il les demande au serveur au serveur et ensuite il peut écrire un message.
 
+    ```console
+    Send message to (q to quit, l to list): user1
+    Message: Hello
+    ```
+
+4. Fermer le serveur et les clients.
+
+Dans l'entrée des clients taper 'q' pour les déconnecter un à un puis faites le sur le serveur.
 
 ## Credits
 
