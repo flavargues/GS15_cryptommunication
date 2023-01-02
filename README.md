@@ -46,7 +46,22 @@ Pour SHA256, l'algorithme était plus complexe à comprendre et la récursion su
 
 ## Usage
 
-here
+1. Lancer le serveur.
+
+    ```console
+    python3 server.py
+    ```
+
+2. Connecter `n` clients dans d'autres consoles.
+
+    ```console
+    python3 client.py
+    ```
+
+3. Communiquer
+
+3. Fermer le serveur et les clients avec `Ctrl+C`.
+
 
 ## Credits
 
