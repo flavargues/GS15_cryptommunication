@@ -116,22 +116,26 @@ def xor(*blocks) -> str:
 
 class DES:
     def __init__(self, text: str, key: str):
-        self.text: str = text
+        self.block: str = text
         self.key: str = key
         self.lpt_block: str = ""
         self.rpt_block: str = ""
+        # initial rpt block is used between rounds
         self.rpt_initial_block: str = ""
 
+    # trasform the key from 64 bits to 56 bits
     def drop_key_parity_bits(self):
         self.key = permute(self.key, PERMUTATION_CHOICE_1, 56)
 
+    # initial permutation of the block
     def initial_permutation(self):
-        result = permute(self.text, INITIAL_PERMUTATION, 64)
+        result = permute(self.block, INITIAL_PERMUTATION, 64)
 
         self.lpt_block = result[:32]
         self.rpt_block = result[32:]
         self.rpt_initial_block = self.rpt_block
 
+    # transform the key for each round of the algorithm
     def key_transformation(self, round):
         if round == 1:
             self.drop_key_parity_bits()
@@ -147,17 +151,20 @@ class DES:
 
         self.round_keys.append(round_key)
 
+    # generate the keys for each round
     def generate_round_keys(self):
         self.round_keys = []
         for round in range(1, 17):
             self.key_transformation(round)
 
+    # expand the rpt block from 32 bits to 48 bits
     def expansion_permutation(self):
         round_key = self.round_keys[self.round-1]
         self.rpt_block = permute(
             self.rpt_block, EXPANSION_PERMUTATION, 48)
         self.rpt_block = xor(round_key, self.rpt_block)
 
+    # apply the sbox substitution
     def sbox_subsitution(self):
         result = ""
         for s_index in range(8):
@@ -168,9 +175,11 @@ class DES:
             result += dec_to_bin(SBOX[s_index][b_index], 4)
         self.rpt_block = result
 
+    # apply the pbox permutation
     def pbox_permutation(self):
         self.rpt_block = permute(self.rpt_block, PBOX, 32)
 
+    # xor the lpt block with the rpt block and swap the blocks
     def xor_and_swap(self):
         self.lpt_block = xor(self.lpt_block, self.rpt_block)
         if (self.round != 16):
@@ -179,16 +188,19 @@ class DES:
         else:
             self.rpt_block = self.rpt_initial_block
 
+    # apply the final permutation
     def final_permutation(self) -> str:
         return permute(
             self.lpt_block + self.rpt_block, FINAL_PERMUTATION, 64)
 
+    # play a round of the algorithm
     def play_round(self):
         self.expansion_permutation()
         self.sbox_subsitution()
         self.pbox_permutation()
         self.xor_and_swap()
 
+    # encrypt the 64 bits block
     def encrypt(self) -> str:
         self.generate_round_keys()
         self.initial_permutation()
@@ -201,6 +213,7 @@ class DES:
         cipher_text = self.final_permutation()
         return cipher_text
 
+    # decrypt the 64 bits block
     def decrypt(self) -> str:
         self.generate_round_keys()
         self.round_keys.reverse()

@@ -18,29 +18,29 @@ def xor(*blocks) -> str:
 
 
 class TripleDES:
-    def __init__(self, text: str, key: str) -> None:
-        self.text: str = text
+    def __init__(self, block: str, key: str) -> None:
+        self.block: str = block
         self.key1: str = key[:64]
         self.key2: str = key[64:128]
         self.key3: str = key[128:192]
 
     def encrypt(self) -> str:
-        cipher_text = self.text
+        cipher_block = self.block
 
-        cipher_text = DES(cipher_text, self.key1).encrypt()
-        cipher_text = DES(cipher_text, self.key2).decrypt()
-        cipher_text = DES(cipher_text, self.key3).encrypt()
+        cipher_block = DES(cipher_block, self.key1).encrypt()
+        cipher_block = DES(cipher_block, self.key2).decrypt()
+        cipher_block = DES(cipher_block, self.key3).encrypt()
 
-        return cipher_text
+        return cipher_block
 
     def decrypt(self) -> str:
-        plain_text = self.text
+        plain_block = self.block
 
-        plain_text = DES(plain_text, self.key3).decrypt()
-        plain_text = DES(plain_text, self.key2).encrypt()
-        plain_text = DES(plain_text, self.key1).decrypt()
+        plain_block = DES(plain_block, self.key3).decrypt()
+        plain_block = DES(plain_block, self.key2).encrypt()
+        plain_block = DES(plain_block, self.key1).decrypt()
 
-        return plain_text
+        return plain_block
 
 
 # if (__name__ == "__main__"):

@@ -13,6 +13,7 @@ logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
 logger = logging.getLogger(__name__)
 
 
+# client socket class
 class Client:
     def __init__(self, host: str, port: int, id: str) -> None:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -20,6 +21,7 @@ class Client:
         self.connected = True
         self.id = id
         self.recipients = {}
+        # send connection request to server and receive server's prime and generator
         self.send_message({
             "sender": self.id,
             "protocol": "clear",
@@ -35,6 +37,7 @@ class Client:
             message["service"]["prime"],
             message["service"]["generator"]
         )
+        # send my public keys to server
         self.send_message({
             "sender": self.id,
             "protocol": "clear",
@@ -47,6 +50,7 @@ class Client:
             print("Starting listening in new thread...")
             receive_thread = threading.Thread(target=self.receive)
             receive_thread.start()
+            # send messages in main thread
             self.send()
             receive_thread.join()
             self.disconnect()
@@ -56,17 +60,21 @@ class Client:
     def send(self):
         while self.connected:
             recipient = input("Send message to (q to quit, l to list): ")
+            # client wants to quit
             if recipient == "q":
                 self.connected = False
                 break
+            # list all recipients in client's database
             elif recipient == "l":
                 print("Recipients: ", self.x3dh.get_recipients())
                 continue
             elif not recipient:
                 continue
+            # add new recipient to client's database if not exists
             elif not self.x3dh.have_recipient(recipient):
                 print("Recipient not found. Creating new recipient, please wait...")
                 self.add_recipient(recipient)
+            # send message to recipient if recipient exists
             elif self.x3dh.have_recipient(recipient):
                 text = input("Message: ")
                 if recipient and text:
@@ -76,6 +84,7 @@ class Client:
         return
 
     def receive(self):
+        # set timeout for socket in order to check if client wants to quit
         self.socket.settimeout(1.0)
         while self.connected:
             try:
@@ -99,12 +108,14 @@ class Client:
 
     def handle_message(self, message: str):
         msg = json.loads(message)
+        # if protocol is clear, handle service actions : get_keys
         if msg["protocol"] == "clear":
             if msg.get("service"):
                 if msg["service"].get("action") == "get_keys":
                     self.x3dh.set_public_keys(
                         msg["recipient"], msg["service"]["keys"], 1024)
                     print(self.x3dh.recipients[msg["recipient"]])
+        # if protocol is x3dh, decrypt message and if new recipient, add to client's database
         elif msg["protocol"] == "x3dh":
             self.add_recipient(msg["sender"])
             decrypted_msg = self.x3dh.decrypt(message.encode())
@@ -112,8 +123,9 @@ class Client:
             print(decrypted_msg.decode())
 
     def add_recipient(self, recipient: str):
-        # Key exchange between clients and storage
+        # key exchange between clients and storage
         if not self.x3dh.have_recipient(recipient):
+            # ask server for recipient's public keys
             self.send_message({
                 "recipient": recipient,
                 "protocol": "clear",
@@ -127,6 +139,7 @@ class Client:
             return True
 
     def disconnect(self):
+        # send disconnect request to server
         self.send_message({
             "sender": self.id,
             "protocol": "clear",
@@ -134,6 +147,7 @@ class Client:
                 "action": "disconnect"
             }
         })
+        # close socket
         self.socket.shutdown(socket.SHUT_RDWR)
         self.socket.close()
         print('Client disconnected.')
