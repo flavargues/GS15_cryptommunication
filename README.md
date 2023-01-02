@@ -5,8 +5,6 @@ It uses eXtended Triple Diffie Hellman (X3DH), Triple Data Encryption Standard (
 
 ## Retour d'experience
 
-ddddddd
-
 ### Sockets
 
 Nous avons fait le choix d'utiiser des sockets afin de pouvoir connecter plusieurs clients au serveur. La difficulté de cet objectif résidait dans la gestion des erreurs et aussi dans les soucis de synchronisation des communications entre les clients et le serveur.
